@@ -6,6 +6,10 @@ import java.net.URL;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.codec.digest.DigestUtils;
+import java.util.HashMap;
 
 /**
  * An example showing how to send HTTP GET and read the response from the server
@@ -15,18 +19,19 @@ public class Main {
     public static void main(String[] args) {
         Main Run = new Main("104.248.47.74", 80);
         Run.authorize();
-        //Run.getSecret();
-        //Run.solveSecret();
-        for (int j = 1; j < 3; j++) {
+        for (int j = 1; j < 5; j++) {
             Run.getTask(j);
             Run.solveTask(j);
         }
+        Run.getSecret();
+        Run.solveSecret();
+        Run.getResult();
     }
 
     private String BASE_URL; // Base URL (address) of the server
     private int ID;
     private String IPSecret;
-    private JSONArray Task2;
+    private JSONArray Task;
 
     /**
      * Create an HTTP GET example
@@ -69,11 +74,19 @@ public class Main {
     }
 
     /**
+     * Send an HTTP GET to get Result
+     */
+    public void getResult() {
+        sendGet("dkrest/results/" + ID);
+    }
+
+    /**
      * Solve Secret
      */
     public void solveSecret() {
-
-        String ip = "82.156.0.1";
+        String ip = Task.getString(0);
+        ip = ip.substring(0, ip.length() - 1);
+        ip = ip.concat("1");
         JSONObject json = new JSONObject();
         json.put("sessionId", ID);
         json.put("ip", ip);
@@ -84,7 +97,7 @@ public class Main {
     }
 
     /**
-     * Solve task 1
+     * Solve tasks
      */
     public void solveTask(int j) {
         if (j == 1) {
@@ -97,14 +110,46 @@ public class Main {
             sendPost("dkrest/solve", json, 0);
         }
         if (j == 2) {
-            String text = Task2.toString();
-            int x = text.length()-2;
+            String text = Task.toString();
+            int x = text.length() - 2;
             String msg = text.substring(2, x);
             JSONObject json = new JSONObject();
             json.put("sessionId", ID);
             json.put("msg", msg);
             System.out.println("Posting this JSON data to server");
             System.out.println(json.toString());
+            sendPost("dkrest/solve", json, 0);
+        }
+        if (j == 3) {
+            List<Integer> list = new ArrayList();
+
+            int pro = 1;
+            for (int i = 0; i < Task.length(); i++) {
+                list.add(i, Task.getInt(i));
+            }
+            for (int i = 0; i < Task.length(); i++) {
+                pro = pro * list.get(i);
+            }
+            JSONObject json = new JSONObject();
+            json.put("sessionId", ID);
+            json.put("result", pro);
+            System.out.println("Posting this JSON data to server");
+            System.out.println(pro);
+            sendPost("dkrest/solve", json, 0);
+        }
+
+        if (j == 4) {
+            HashMap<String, Integer> list = new HashMap<String, Integer>();
+            for (int i = 0; i < 9999; i++) {
+                String password = String.valueOf(i);
+                list.put(DigestUtils.md5Hex(password), i);
+            }
+            int pin = list.get(Task.getString(0));
+            JSONObject json = new JSONObject();
+            json.put("sessionId", ID);
+            json.put("pin", pin);
+            System.out.println("Posting this JSON data to server");
+            System.out.println();
             sendPost("dkrest/solve", json, 0);
         }
     }
@@ -132,12 +177,11 @@ public class Main {
                 stream.close();
                 System.out.println("Response from the server:");
                 System.out.println(jsonObjectString);
-               
 
                 JSONObject jsonObject = new JSONObject(jsonObjectString);
 
                 if (jsonObject.has("arguments")) {
-                    Task2 = jsonObject.getJSONArray("arguments");
+                    Task = jsonObject.getJSONArray("arguments");
                 }
 
             } else {
