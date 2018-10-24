@@ -97,7 +97,9 @@ public class Main {
             sendPost("dkrest/solve", json, 0);
         }
         if (j == 2) {
-            String msg = Task2.toString();
+            String text = Task2.toString();
+            int x = text.length()-2;
+            String msg = text.substring(2, x);
             JSONObject json = new JSONObject();
             json.put("sessionId", ID);
             json.put("msg", msg);
